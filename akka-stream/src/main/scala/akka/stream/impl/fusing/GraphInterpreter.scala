@@ -467,7 +467,9 @@ private[stream] final class GraphInterpreter(
         logic.beforePreStart()
         logic.preStart()
       } catch {
-        case NonFatal(e) ⇒ logic.failStage(e)
+        case NonFatal(e) ⇒
+          log.error(e, "Error during preStart in [{}]", assembly.stages(logic.stageId))
+          logic.failStage(e)
       }
       afterStageHasRun(logic)
       i += 1
@@ -534,7 +536,10 @@ private[stream] final class GraphInterpreter(
         catch {
           case NonFatal(e) ⇒
             if (activeStage == null) throw e
-            else activeStage.failStage(e, isInternal = true)
+            else {
+              log.error(e, "Error in stage [{}]: {}", assembly.stages(activeStage.stageId), e.getMessage)
+              activeStage.failStage(e, isInternal = true)
+            }
         }
         afterStageHasRun(activeStage)
         eventsRemaining -= 1
@@ -669,7 +674,7 @@ private[stream] final class GraphInterpreter(
       logic.afterPostStop()
     } catch {
       case NonFatal(e) ⇒
-        log.error(e, s"Error during postStop in [${assembly.stages(logic.stageId)}]")
+        log.error(e, s"Error during postStop in [{}]: {}", assembly.stages(logic.stageId), e.getMessage)
     }
   }
 
